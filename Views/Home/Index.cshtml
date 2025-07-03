@@ -1,0 +1,178 @@
+﻿@model PokemonViewModel
+
+@{
+	var offset = (int)ViewBag.Offset;
+	var prevOffset = Math.Max(offset - 20, 0);
+	var nextOffset = offset + 20;
+}
+
+<div class="pokemon-container">
+	<h2>Pokémon API</h2>
+
+	<div class="filters">
+		<div class="search">
+			<form method="get">
+				<div class="input-group">
+					<input class="form-control" type="text" name="search" placeholder="Buscar Pokémon..."
+						value="@ViewBag.Search" />
+					<button class="btn btn-primary" type="submit">Buscar</button>
+				</div>
+			</form>
+		</div>
+		<div class="species">
+			<select onchange="onSpeciesChange(this)" class="form-control" name="" id="">
+				<option value="">Filtrar por especie</option>
+				@foreach (var species in Model.SpeciesList)
+				{
+					<option value="@species.Name">@species.Name</option>
+				}
+			</select>
+		</div>
+	</div>
+
+	@if (ViewBag.search != null && ViewBag.search != "")
+	{
+		<h2>Mostrando resultados para: "@ViewBag.Search"</h2>
+	}
+
+	@if (ViewBag.species != null && ViewBag.species != "")
+	{
+		<h2>Mostrando resultados para especie: "@ViewBag.Species"</h2>
+	}
+
+	@if (Model.PokemonList.Count == 0)
+	{
+		<div class="alert alert-info" role="alert">
+			No se encontraron Pokémon.
+		</div>
+	}
+	else
+	{
+
+		<div class="d-flex justify-content-between align-items-center">
+			<div class="d-flex flex-column">
+				<button onclick="exportMultiplePokemonToExcel()" class="btn btn-success">Exportar a Excel</button>
+				<span>Exportar @Model.PokemonList.Count registros</span>
+			</div>
+			<button onclick="sendEmail()" class="btn btn-outline-primary">Enviar por correo</button>
+		</div>
+
+		<div class="pokemon-grid">
+			@foreach (var pokemon in Model.PokemonList)
+			{
+				string id = pokemon.Url.Split("/")[6];
+				string imageUrl = $"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{id}.png";
+
+				var json = System.Text.Json.JsonSerializer.Serialize(pokemon);
+				string encoded = Uri.EscapeDataString(json);
+
+
+				<div class="pokemon-item-wrapper">
+					<a asp-action="Details" asp-route-name="@pokemon.Name" class="pokemon-item-info">
+						<h3>@pokemon.Name</h3>
+						<img src="@imageUrl" alt="">
+					</a>
+					<div class="pokemon-item-info">
+						<button class="btn btn-outline-primary">Enviar por correo</button>
+						<button onclick="exportSinglePokemonToExcel(decodeURIComponent('@encoded'))" class="btn btn-success">Exportar a
+							excel</button>
+					</div>
+				</div>
+			}
+		</div>
+
+		<div class="pagination">
+			@if ((bool)ViewBag.HasPrevious)
+			{
+				<a class="btn btn-primary" href="@Url.Action("Index", new { offset = prevOffset })">Anterior</a>
+			}
+			@if ((bool)ViewBag.HasNext)
+			{
+				<a class="btn btn-primary" href="@Url.Action("Index", new { offset = nextOffset })">Siguiente</a>
+			}
+		</div>
+	}
+</div>
+
+<script>
+	function onSpeciesChange(select) {
+		const selected = select.value;
+		const url = selected ? `/?species=${selected}` : '/';
+		window.location.href = url;
+	}
+
+	function exportSinglePokemonToExcel(jsonString) {
+		const pokemon = JSON.parse(jsonString);
+		generateExcel([pokemon]);
+	}
+
+	function exportMultiplePokemonToExcel() {
+		const pokemonData = @Html.Raw(Json.Serialize(Model.PokemonList));
+		generateExcel(pokemonData);
+	}
+
+	async function generateExcel(body) {
+
+		try {
+			const response = await fetch('/export', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(body)
+			})
+
+			const blob = await response.blob();
+
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = 'pokemon-export.xlsx';
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+
+		} catch (error) {
+			console.error(error);
+			alert("Ocurrio un problema al exportar el archivo.");
+		}
+	}
+
+	async function sendEmail() {
+		try {
+			const response = await fetch('/email/send', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					subject: "Lista de pokemone",
+					body: `
+						<h2>Lista de pokemones</h2>
+						<span>Esta es una lista de pokemones exportada desde la API de PokeAPI.</span>
+						<table>
+							<thead>
+								<tr>
+									<th>Nombre</th>
+									<th>URL</th>
+								</tr>
+							</thead>
+							<tbody>
+							@foreach (var pokemon in Model.PokemonList)
+								{
+										<tr>
+											<td>@pokemon.Name</td>
+											<td>@pokemon.Url</td>
+										</tr>
+									}
+							</tbody>
+					`,
+					to: "" 
+				})
+			});
+		} catch (error) {
+			console.error(error);
+			alert("Ocurrio un problema al enviar el correo.");
+		}
+	}
+</script>

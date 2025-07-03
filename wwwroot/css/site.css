@@ -1,0 +1,67 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.pokemon-container {
+
+  width: 700px;
+  margin: auto;
+}
+
+.pokemon-container h2 {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.pokemon-container .filters {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.pokemon-container .pagination {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
+.pokemon-item-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  margin-bottom: 20px;
+}
+
+.pokemon-item-info {
+  color: black;
+  text-decoration: none;
+  text-transform: capitalize;
+}
